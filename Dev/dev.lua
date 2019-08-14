@@ -1223,6 +1223,8 @@ function dev.DrawCall(event, ticks )
 						GUI:PushItemWidth(250)
 						GUI:BulletText("Game Time") GUI:SameLine(200) GUI:InputText("##devuf2",tostring(GetGameTime()))
 						GUI:BulletText("Computer ID") GUI:SameLine(200) GUI:InputText("##devuf1",tostring(GetComputerID()))
+						GUI:BulletText("Is Map Open") GUI:SameLine(200) GUI:InputText("##devuf7",tostring(IsMapOpen()))
+						
 						local p = GetMouseInWorldPos()
 						if ( table.valid(p)) then
 							GUI:BulletText("MousePosition") GUI:SameLine(200)  GUI:InputFloat3( "##devuf5", p.x, p.y, p.z, 2, GUI.InputTextFlags_ReadOnly)
@@ -1254,11 +1256,80 @@ function dev.DrawCall(event, ticks )
 								Player:EnterGameWorld(dev.logincharname,dev.loginserverid)
 							end
 						end
+						
+						GUI:PopItemWidth()
+						GUI:PushItemWidth(100)
+						GUI:BulletText("GetUISize") GUI:SameLine(200) GUI:InputText("##devuxf2",tostring(GetUISize()))
+						GUI:BulletText("SetUISize") GUI:SameLine(200) dev.uisize = GUI:InputInt("##devufx6",dev.uisize or 1 ,1,1)
+						GUI:SameLine()
+						if (GUI:Button("SetSize",75,15) ) then
+							SetUISize(dev.uisize)
+						end
+						
+						if(dev.uioptionOnOff == nil) then dev.uioptionOnOff = true end
+						if(dev.uioption == nil) then dev.uioption = 0 end
+						GUI:BulletText("ToggleUIOption") GUI:SameLine(200) dev.uioption = GUI:InputInt("##devufx7",dev.uioption,1,1) GUI:SameLine() dev.uioptionOnOff = GUI:Checkbox("##devufxx7",dev.uioptionOnOff) 
+						GUI:SameLine()
+						if (GUI:Button("Toggle",75,15) ) then
+							ToggleUIOption(dev.uioption, dev.uioptionOnOff == true and 1 or 0)
+						end
+						
 						GUI:PopItemWidth()
 						GUI:TreePop()
 					end
 
 -- END Utility Functions & Other Infos
+					if ( GUI:TreeNode("Installed Addons") ) then
+				dev.showInitAddons = GUI:Checkbox("Include Initialize Events", dev.showInitAddons or false)
+				if(not dev.lastaddontick or ticks - dev.lastaddontick > 200) then
+					dev.lastaddontick = ticks
+					dev.addonlist = GetAddonList()
+					table.sort(dev.addonlist, function(a,b) return a.average > b.average end)					
+				end
+				GUI:PushItemWidth(250)
+				GUI:Columns( 6, "#beer", true )
+				GUI:SetColumnWidth(0, 250)
+				GUI:SetColumnWidth(1, 125)
+				GUI:SetColumnWidth(2, 100)
+				GUI:SetColumnWidth(3, 100)
+				GUI:SetColumnWidth(4, 100)
+				GUI:SetColumnWidth(5, 100)
+				GUI:Text("Addon")
+				GUI:NextColumn()
+				GUI:Text("Event")
+				GUI:NextColumn()
+				GUI:Text("lasttick")						
+				GUI:NextColumn()						
+				GUI:Text("highest (ms)")
+				GUI:NextColumn()
+				GUI:Text("lowest (ms)")
+				GUI:NextColumn()
+				GUI:Text("average (ms)")
+				GUI:NextColumn()
+				GUI:Separator()					
+				for i, e in pairs(dev.addonlist) do
+					if(e.highest ~= 0) then
+						if(dev.showInitAddons or ( e.lasttick < 10000 and e.event ~= "Module.Initialize"))then
+							GUI:Text(e.name)
+							GUI:NextColumn()
+							GUI:Text(e.event)
+							GUI:NextColumn()
+							GUI:Text(e.lasttick)
+							GUI:NextColumn()
+							GUI:Text(e.highest)
+							GUI:NextColumn()
+							GUI:Text(e.slowest)
+							GUI:NextColumn()
+							GUI:Text(e.average)
+							GUI:NextColumn()
+						end
+					end
+				end
+				GUI:Columns(1)
+				GUI:PopItemWidth()
+				GUI:TreePop()
+			end
+-- 	END INSTALLED ADDONS
 					
 				end
 			GUI:PopStyleVar(2)
@@ -1300,6 +1371,7 @@ function dev.DrawCharacterDetails(c)
 		GUI:BulletText("MeshPosition") GUI:SameLine(200)  GUI:InputFloat3( "##dev9m", meshpos.x, meshpos.y, meshpos.z, 2, GUI.InputTextFlags_ReadOnly)
 		GUI:BulletText("Dist MeshPos-Player") GUI:SameLine(200)  GUI:InputFloat("##dev12m", meshpos.distance,0,0,2)
 		GUI:BulletText("Dist to MeshPos") GUI:SameLine(200)  GUI:InputFloat("##dev13m", meshpos.meshdistance,0,0,2)	
+		GUI:BulletText("Mesh Flags") GUI:SameLine(200)  GUI:InputText("##dev133m", meshpos.flags,GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
 	end
 	GUI:BulletText("Attitude") GUI:SameLine(200) GUI:InputText("##dev23", tostring(c.attitude),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
 	GUI:BulletText("MovementState") GUI:SameLine(200) GUI:InputText("##dev17", tostring(c.movementstate),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
@@ -1416,6 +1488,19 @@ function dev.DrawGadgetDetails(c)
 	GUI:BulletText("IsCombatant") GUI:SameLine(200) GUI:InputText("##devg29", tostring(c.iscombatant),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
 	GUI:BulletText("IsOurs") GUI:SameLine(200) GUI:InputText("##devg30", tostring(c.isours),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
 	GUI:BulletText("IsTurret") GUI:SameLine(200) GUI:InputText("##devg45", tostring(c.isturret),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
+	
+	local castinfo = c.castinfo
+	if ( table.size(castinfo) > 0 ) then
+		GUI:BulletText("AttackedTargetPtr") GUI:SameLine(200) GUI:InputText("##devg254",tostring(string.format( "%X",castinfo.ptr)),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
+		GUI:BulletText("AttackedTargetID") GUI:SameLine(200) GUI:InputText("##devg25", tostring(castinfo.targetid),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
+		GUI:BulletText("Current Skill ID") GUI:SameLine(200) GUI:InputText("##dev2g6", tostring(castinfo.skillid),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
+		GUI:BulletText("Last Skill ID") GUI:SameLine(200) GUI:InputText("##devg27", tostring(castinfo.lastskillid),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
+		GUI:BulletText("Skill Slot") GUI:SameLine(200) GUI:InputText("##dev28g", tostring(castinfo.slot),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
+		GUI:BulletText("Skill Duration") GUI:SameLine(200) GUI:InputText("##dev2g9", tostring(castinfo.duration),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
+	else
+		GUI:BulletText("castinfo MISSING!")
+	end
+	
 	-- Unknown0: 
 	GUI:BulletText("Unknown0") GUI:SameLine(200) GUI:InputText("##devg31", tostring(c.isunknown0),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
 	-- Unknown1: 
@@ -1429,7 +1514,7 @@ function dev.DrawGadgetDetails(c)
 	-- Unknown5: 
 	GUI:BulletText("Unknown5") GUI:SameLine(200) GUI:InputText("##devg36", tostring(c.isunknown5),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
 	-- Unknown6: Set/Script ID. This seems to link gadgets that perform the same action.
-	GUI:BulletText("Unknown6") GUI:SameLine(200) GUI:InputText("##devg37", tostring(c.isunknown6),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
+	GUI:BulletText("Level") GUI:SameLine(200) GUI:InputText("##devg37", tostring(c.isunknown6),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
 	-- Unknown7: 
 	GUI:BulletText("Unknown7") GUI:SameLine(200) GUI:InputText("##devg38", tostring(c.isunknown7),GUI.InputTextFlags_ReadOnly+GUI.InputTextFlags_AutoSelectAll)
 	-- Unknown8: 

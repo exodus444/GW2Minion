@@ -28,7 +28,7 @@ function Player:MoveTo(x, y, z, targetid, stoppingdistance, randommovement, smoo
 			gw2_unstuck.Reset()
 		end
 		ml_navigation.navconnection = nil
-		local status = ml_navigation:MoveTo(x, y, z, targetID)
+		local status = ml_navigation:MoveTo(x, y, z, targetid)
 		
 		-- Handle stuck if we start off mesh
 		if(status == -1 or status == -7) then
@@ -92,7 +92,26 @@ function ml_navigation.Navigate(event, ticks )
 						-- Custom OMC
 						elseif(ml_navigation.navconnection.type == 4) then
 							
-							if(ml_navigation.navconnection.subtype == 1 ) then
+							-- 'live nav' vs 'new nav'
+							local ncsubtype
+							local ncradius
+							local ncdirectionFromA
+							if (NavigationManager.ShowCells == nil ) then	
+								ncsubtype = ml_navigation.navconnection.subtype
+								ncradius = ml_navigation.navconnection.radius
+							else
+								if (ml_navigation.navconnection.details) then
+									ncsubtype = ml_navigation.navconnection.details.subtype
+									if(nextnode.navconnectionsideA == true) then
+										ncradius = ml_navigation.navconnection.sideB.radius -- yes , B , not A
+										ncdirectionFromA =  true
+									else
+										ncradius = ml_navigation.navconnection.sideA.radius
+										ncdirectionFromA =  false
+									end
+								end
+							end					
+							if(ncsubtype == 1 ) then
 								-- JUMP
 								lastnode = nextnode
 								nextnode = ml_navigation.path[ ml_navigation.pathindex + 1]
@@ -101,10 +120,10 @@ function ml_navigation.Navigate(event, ticks )
 									if ( not ml_navigation.omc_startheight ) then ml_navigation.omc_startheight = playerpos.z end
 									-- Additionally check if we are "above" the target point already, in that case, stop moving forward
 									local nodedist = ml_navigation:GetRaycast_Player_Node_Distance(playerpos,nextnode)
-									if ( (nodedist)  < ml_navigation.NavPointReachedDistances["Walk"] or (playerpos.z < nextnode.z and math.distance2d(playerpos,nextnode) < ml_navigation.NavPointReachedDistances["Walk"]) ) then
+									if ( (nodedist)  < ml_navigation.NavPointReachedDistances["Walk"] or (playerpos.z < nextnode.z and (math.distance2d(playerpos,nextnode)-ncradius*32) < ml_navigation.NavPointReachedDistances["Walk"]) ) then
 										d("[Navigation] - We are above the OMC_END Node, stopping movement. ("..tostring(math.round(nodedist,2)).." < "..tostring(ml_navigation.NavPointReachedDistances["Walk"])..")")
 										Player:Stop()
-										if ( ml_navigation.navconnection.radius < 1.0  ) then
+										if ( ncradius < 1.0  ) then
 											ml_navigation:SetEnsureEndPosition(nextnode, nextnextnode, playerpos)
 										end
 									else									
@@ -116,7 +135,7 @@ function ml_navigation.Navigate(event, ticks )
 									-- If Playerheight is lower than 4*omcreached dist AND Playerheight is lower than 4* our Startposition -> we fell below the OMC START & END Point
 									if (( playerpos.z > (nextnode.z + 4*ml_navigation.NavPointReachedDistances["Walk"])) and ( playerpos.z > ( ml_navigation.omc_startheight + 4*ml_navigation.NavPointReachedDistances["Walk"]))) then
 										if ( ml_navigation.omcteleportallowed and math.distance3d(playerpos,nextnode) < ml_navigation.NavPointReachedDistances["Walk"]*10) then
-											if ( ml_navigation.navconnection.radius < 1.0  ) then
+											if ( ncradius < 1.0  ) then
 												ml_navigation:SetEnsureEndPosition(nextnode, nextnextnode, playerpos)
 											end
 										else
@@ -126,10 +145,10 @@ function ml_navigation.Navigate(event, ticks )
 									else
 										-- Additionally check if we are "above" the target point already, in that case, stop moving forward
 										local nodedist = ml_navigation:GetRaycast_Player_Node_Distance(playerpos,nextnode)
-										if ( (nodedist)  < ml_navigation.NavPointReachedDistances["Walk"] or (playerpos.z < nextnode.z and math.distance2d(playerpos,nextnode) < ml_navigation.NavPointReachedDistances["Walk"])) then
+										if ( (nodedist)  < ml_navigation.NavPointReachedDistances["Walk"] or (playerpos.z < nextnode.z and (math.distance2d(playerpos,nextnode)-ncradius*32) < ml_navigation.NavPointReachedDistances["Walk"])) then
 											d("[Navigation] - We are above the OMC END Node, stopping movement. ("..tostring(math.round(nodedist,2)).." < "..tostring(ml_navigation.NavPointReachedDistances["Walk"])..")")
 											Player:Stop()
-											if ( ml_navigation.navconnection.radius < 1.0  ) then
+											if ( ncradius < 1.0  ) then
 												ml_navigation:SetEnsureEndPosition(nextnode, nextnextnode, playerpos)
 											end									
 										else									
@@ -152,11 +171,11 @@ function ml_navigation.Navigate(event, ticks )
 									else
 										-- We are after the Jump and landed already
 										local nodedist = ml_navigation:GetRaycast_Player_Node_Distance(playerpos,nextnode)
-										if ( (nodedist - ml_navigation.navconnection.radius*32 ) < ml_navigation.NavPointReachedDistances["Walk"]) then
-											d("[Navigation] - We reached the OMC END Node. ("..tostring(math.round(nodedist,2)).." < "..tostring(ml_navigation.NavPointReachedDistances["Walk"])..")")
+										if ( (nodedist - ncradius*32 ) < ml_navigation.NavPointReachedDistances["Walk"]) then
+											d("[Navigation] - We reached the OMC END Node (Jump). ("..tostring(math.round(nodedist,2)).." < "..tostring(ml_navigation.NavPointReachedDistances["Walk"])..")")
 											local nextnode = nextnextnode
 											local nextnextnode = ml_navigation.path[ ml_navigation.pathindex + 2]
-											if ( ml_navigation.navconnection.radius < 1.0  ) then
+											if ( ncradius < 1.0  ) then
 												ml_navigation:SetEnsureEndPosition(nextnode, nextnextnode, playerpos)
 											end
 											ml_navigation.pathindex = ml_navigation.pathindex + 1
@@ -172,12 +191,20 @@ function ml_navigation.Navigate(event, ticks )
 								return
 								
 								
-							elseif(ml_navigation.navconnection.subtype == 2 ) then
+							elseif(ncsubtype == 2 ) then
 								-- WALK
 								lastnode = nextnode		-- OMC start
 								nextnode = ml_navigation.path[ ml_navigation.pathindex + 1]	-- OMC end
 								
-							elseif(ml_navigation.navconnection.subtype == 3 ) then
+								local nodedist = ml_navigation:GetRaycast_Player_Node_Distance(playerpos,nextnode)
+								local enddist = nodedist - ncradius*32
+								if (enddist < ml_navigation.NavPointReachedDistances["Walk"]) then
+									d("[Navigation] - We reached the OMC END Node (Walk). ("..tostring(math.round(enddist,2)).." < "..tostring(ml_navigation.NavPointReachedDistances["Walk"])..")")
+									ml_navigation.pathindex = ml_navigation.pathindex + 1
+									NavigationManager.NavPathNode = ml_navigation.pathindex
+									ml_navigation.navconnection = nil									
+								end
+							elseif(ncsubtype == 3 ) then
 								-- TELEPORT
 								nextnode = ml_navigation.path[ ml_navigation.pathindex + 1]
 								HackManager:Teleport(nextnode.x,nextnode.y,nextnode.z)
@@ -186,7 +213,7 @@ function ml_navigation.Navigate(event, ticks )
 								ml_navigation.navconnection = nil
 								return
 								
-							elseif(ml_navigation.navconnection.subtype == 4 ) then
+							elseif(ncsubtype == 4 ) then
 								-- INTERACT
 								Player:Interact()
 								ml_navigation.lastupdate = ml_navigation.lastupdate + 1000
@@ -195,7 +222,7 @@ function ml_navigation.Navigate(event, ticks )
 								ml_navigation.navconnection = nil
 								return
 								
-							elseif(ml_navigation.navconnection.subtype == 5 ) then
+							elseif(ncsubtype == 5 ) then
 								-- PORTAL
 								-- Check if we have reached the portal end position
 								portalend = ml_navigation.path[ ml_navigation.pathindex + 1]
@@ -207,44 +234,88 @@ function ml_navigation.Navigate(event, ticks )
 								else
 									-- We need to face and move 
 									-- find out from which side we are coming:
-									local dA = math.distance3d(ml_navigation.navconnection.from, playerpos)
-									local dB = math.distance3d(ml_navigation.navconnection.to, playerpos)
-									local closest = ml_navigation.navconnection.from
-									if ( dB < dA ) then closest = ml_navigation.navconnection.to end
-									Player:SetFacingH(closest.hx,closest.hy,closest.hz)
+									if (NavigationManager.ShowCells == nil ) then	
+										local dA = math.distance3d(ml_navigation.navconnection.from, playerpos)
+										local dB = math.distance3d(ml_navigation.navconnection.to, playerpos)
+										local closest = ml_navigation.navconnection.from
+										if ( dB < dA ) then closest = ml_navigation.navconnection.to end
+										Player:SetFacingH(closest.hx,closest.hy,closest.hz)
+									else
+										-- new nav
+										if(nextnode.navconnectionsideA == true) then											
+											Player:SetFacingH(ml_navigation.navconnection.details.headingA_x, ml_navigation.navconnection.details.headingA_y, ml_navigation.navconnection.details.headingA_z)
+										else
+											Player:SetFacingH(ml_navigation.navconnection.details.headingB_x, ml_navigation.navconnection.details.headingB_y, ml_navigation.navconnection.details.headingB_z)
+										end
+									end
 									ml_navigation:MoveToNextNode(playerpos, lastnode, nextnode, true)
 								end
 								return
 								
-							elseif(ml_navigation.navconnection.subtype == 6 ) then
+							elseif(ncsubtype == 6 ) then
 								-- Custom Lua Code								
 								lastnode = nextnode		-- OMC start
 								nextnode = nextnextnode	-- OMC end
 								local result
-								if ( ml_navigation.navconnection.luacode and ml_navigation.navconnection.luacode ~= "" and ml_navigation.navconnection.luacode ~= " " ) then
-									
-									if ( not ml_navigation.navconnection.luacode_compiled and not ml_navigation.navconnection.luacode_bugged ) then					
-										local execstring = 'return function(self,startnode,endnode) '..ml_navigation.navconnection.luacode..' end'
-										local func = loadstring(execstring)
-										if ( func ) then
-											result = func()(ml_navigation.navconnection, lastnode, nextnode)
-											if ( ml_navigation.navconnection ) then -- yeah happens, crazy, riught ?
-												ml_navigation.navconnection.luacode_compiled = func	
+								if (NavigationManager.ShowCells == nil ) then								
+									if ( ml_navigation.navconnection.luacode and ml_navigation.navconnection.luacode ~= "" and ml_navigation.navconnection.luacode ~= " " ) then
+										
+										if ( not ml_navigation.navconnection.luacode_compiled and not ml_navigation.navconnection.luacode_bugged ) then					
+											local execstring = 'return function(self,startnode,endnode) '..ml_navigation.navconnection.luacode..' end'
+											local func = loadstring(execstring)
+											if ( func ) then
+												result = func()(ml_navigation.navconnection, lastnode, nextnode)
+												if ( ml_navigation.navconnection ) then -- yeah happens, crazy, riught ?
+													ml_navigation.navconnection.luacode_compiled = func	
+												end
+											else
+												ml_navigation.navconnection.luacode_compiled = nil
+												ml_navigation.navconnection.luacode_bugged = true
+												ml_error("[Navigation] - The Mesh Connection Lua Code has a BUG !!")
+												assert(loadstring(execstring)) -- print out the actual error
 											end
 										else
-											ml_navigation.navconnection.luacode_compiled = nil
-											ml_navigation.navconnection.luacode_bugged = true
-											ml_error("[Navigation] - The Mesh Connection Lua Code has a BUG !!")
-											assert(loadstring(execstring)) -- print out the actual error
-										end
+											--executing the already loaded function
+											result = ml_navigation.navconnection.luacode_compiled()(ml_navigation.navconnection, lastnode, nextnode)
+										end									
+										
 									else
-										--executing the already loaded function
-										result = ml_navigation.navconnection.luacode_compiled()(ml_navigation.navconnection, lastnode, nextnode)
-									end									
+										d("[Navigation] - ERROR: A 'Custom Lua Code' MeshConnection has NO lua code!...")
+									end
 									
 								else
-									d("[Navigation] - ERROR: A 'Custom Lua Code' MeshConnection has NO lua code!...")
+									-- new nav
+									if ( ml_navigation.navconnection.details.luacode and ml_navigation.navconnection.details.luacode and ml_navigation.navconnection.details.luacode ~= "" and ml_navigation.navconnection.details.luacode ~= " " ) then
+										
+										if ( not ml_navigation.navconnection.luacode_compiled and not ml_navigation.navconnection.luacode_bugged ) then					
+											local execstring = 'return function(self,startnode,endnode) '..ml_navigation.navconnection.details.luacode..' end'
+											local func = loadstring(execstring)
+											if ( func ) then
+												result = func()(ml_navigation.navconnection, lastnode, nextnode)
+												if ( ml_navigation.navconnection ) then -- yeah happens, crazy, riught ?
+													ml_navigation.navconnection.luacode_compiled = func
+												else
+													--ml_error("[Navigation] - Cannot set luacode_compiled, ml_navigation.navconnection is nil !?")
+												end
+											else
+												ml_navigation.navconnection.luacode_compiled = nil
+												ml_navigation.navconnection.luacode_bugged = true
+												ml_error("[Navigation] - The Mesh Connection Lua Code has a BUG !!")
+												assert(loadstring(execstring)) -- print out the actual error
+											end
+										else
+											--executing the already loaded function
+											if(ml_navigation.navconnection.luacode_compiled) then
+												result = ml_navigation.navconnection.luacode_compiled()(ml_navigation.navconnection, lastnode, nextnode)
+											end
+										end									
+										
+									else
+										d("[Navigation] - ERROR: A 'Custom Lua Code' MeshConnection has NO lua code!...")
+									end
+									
 								end
+								
 								-- continue to walk to the omc end
 								if ( result ) then
 									-- moving on to the omc end							
@@ -292,7 +363,7 @@ function ml_navigation.Navigate(event, ticks )
 		end
 	end
 end
-RegisterEventHandler("Gameloop.Draw", ml_navigation.Navigate, "GW2Minion")
+RegisterEventHandler("Gameloop.Draw", ml_navigation.Navigate, "ml_navigation.Navigate") -- TODO: navigate on draw loop?
 
 -- Checks if the next node in our path was reached, takes differen movements into account ( swimming, walking, riding etc. )
 function ml_navigation:NextNodeReached( playerpos, nextnode , nextnextnode)
@@ -301,16 +372,28 @@ function ml_navigation:NextNodeReached( playerpos, nextnode , nextnextnode)
 		local navcon = nil
 		local navconradius = 0
 		if( nextnode.navconnectionid and nextnode.navconnectionid ~= 0) then
-			navcon = ml_mesh_mgr.navconnections[nextnode.navconnectionid]
-			if ( navcon ) then
-				navconradius = navcon.radius *32 -- meshspace to gamespace is *32 in GW2
-			end
+			-- new && old nav code
+			if (NavigationManager.ShowCells == nil ) then
+				navcon = ml_mesh_mgr.navconnections[nextnode.navconnectionid]
+				if ( navcon ) then
+					navconradius = navcon.radius -- meshspace to gamespace is *32 in GW2
+				end
+			else
+				navcon = NavigationManager:GetNavConnection(nextnode.navconnectionid)
+				if ( navcon ) then
+					if(nextnode.navconnectionsideA == true) then											
+						navconradius = navcon.sideA.radius -- meshspace to gamespace is *32 in GW2
+					else
+						navconradius = navcon.sideB.radius -- meshspace to gamespace is *32 in GW2
+					end
+				end
+			end			
 		end		
 			
 		if (Player.swimming ~= GW2.SWIMSTATE.Diving) then		
 			local nodedist = ml_navigation:GetRaycast_Player_Node_Distance(playerpos,nextnode)
-			if ( (nodedist - navconradius) < ml_navigation.NavPointReachedDistances["Walk"] ) then
-				d("[Navigation] - Node reached. ("..tostring(math.round(nodedist - navconradius,2)).." < "..tostring(ml_navigation.NavPointReachedDistances["Walk"])..")")
+			if ( (nodedist - navconradius*32) < ml_navigation.NavPointReachedDistances["Walk"] ) then
+				d("[Navigation] - Node reached. ("..tostring(math.round(nodedist - navconradius*32,2)).." < "..tostring(ml_navigation.NavPointReachedDistances["Walk"])..")")
 				-- We arrived at a NavConnection Node
 				if( navcon) then
 					d("[Navigation] -  Arrived at NavConnection ID: "..tostring(nextnode.navconnectionid))
@@ -345,9 +428,9 @@ function ml_navigation:NextNodeReached( playerpos, nextnode , nextnextnode)
 		-- Handle underwater movement
 			-- Check if the next Cubenode is reached:
 			local dist3D = math.distance3d(nextnode,playerpos)
-			if ( (dist3D - navconradius) < ml_navigation.NavPointReachedDistances["Diving"]) then
+			if ( (dist3D - navconradius*32) < ml_navigation.NavPointReachedDistances["Diving"]) then
 				-- We reached the node
-				d("[Navigation] - Cube Node reached. ("..tostring(math.round(dist3D - navconradius,2)).." < "..tostring(ml_navigation.NavPointReachedDistances["Diving"])..")")
+				d("[Navigation] - Cube Node reached. ("..tostring(math.round(dist3D - navconradius*32,2)).." < "..tostring(ml_navigation.NavPointReachedDistances["Diving"])..")")
 					
 				-- We arrived at a NavConnection Node
 				if( navcon) then
@@ -518,8 +601,7 @@ function ml_navigation:GetRaycast_Player_Node_Distance(ppos,node)
 			end
 			
 			if(self.lastpathnodefar > 3) then
-				d("[Navigation] - Loop detected, going back and forth too often - reset navigation..")
-				d(tostring(dist2d).. " ---- ".. tostring(self.lastpathnodefar))
+				d("[Navigation] - Loop detected, going back and forth too often - reset navigation.. "..tostring(dist2d).. " ---- ".. tostring(self.lastpathnodefar))
 				ml_navigation.forcereset = true
 				return 0 -- should make the calling logic "arrive" at the node				
 			end
@@ -542,22 +624,45 @@ function ml_navigation:SetEnsureStartPosition(currentnode, nextnode, playerpos, 
 	self.ensureposition = {x = currentnode.x, y = currentnode.y, z = currentnode.z}
 	
 	-- Find out which side of the NavCon we are at
-	local nearside, farside
-	if (math.distance3d(playerpos, navconnection.from) < math.distance3d(playerpos, navconnection.to) ) then
-		nearside = navconnection.from
-		farside = navconnection.to
-	else
-		nearside = navconnection.to
-		farside = navconnection.from
-	end
+	if (NavigationManager.ShowCells == nil ) then
+		-- ol nav
+		local nearside, farside
+		if (math.distance3d(playerpos, navconnection.from) < math.distance3d(playerpos, navconnection.to) ) then
+			nearside = navconnection.from
+			farside = navconnection.to
+		else
+			nearside = navconnection.to
+			farside = navconnection.from
+		end
+		
+		if(nearside.hx ~= 0 ) then
+			self.ensureheading = nearside
+			self.ensureheadingtargetpos =  nil
+		else	
+			self.ensureheading = nil
+			self.ensureheadingtargetpos = {x = farside.x, y = farside.y, z = farside.z}
+		end	
 	
-	if(nearside.hx ~= 0 ) then
-		self.ensureheading = nearside
-		self.ensureheadingtargetpos =  nil
-	else	
-		self.ensureheading = nil
-		self.ensureheadingtargetpos = {x = farside.x, y = farside.y, z = farside.z}
-	end	
+	else
+		-- new nav
+		if(navconnection.details) then
+			if(currentnode.navconnectionsideA == true) then
+				self.ensureheading = {hx = navconnection.details.headingA_x, hy = navconnection.details.headingA_y, hz = navconnection.details.headingA_z}				
+			else
+				self.ensureheading = {hx = navconnection.details.headingB_x, hy = navconnection.details.headingB_y, hz = navconnection.details.headingB_z}				
+			end
+			self.ensureheadingtargetpos =  nil
+			
+		else
+			-- this still a thing ?
+			if(currentnode.navconnectionsideA == true) then
+				self.ensureheadingtargetpos = {x = navconnection.sideA.x, y = navconnection.sideA.y, z = navconnection.sideA.z}
+			else
+				self.ensureheadingtargetpos = {x = navconnection.sideB.x, y = navconnection.sideB.y, z = navconnection.sideB.z}		
+			end
+			self.ensureheading = nil
+		end
+	end
 	self:EnsurePosition(playerpos)
 end
 function ml_navigation:SetEnsureEndPosition(currentnode, nextnode, playerpos)
@@ -606,6 +711,89 @@ function ml_navigation:EnsurePosition(playerpos)
 	return false
 end
 
+-- lookahead, number of nodes to look ahead for an omc
+-- returns true if there is an omc on our path
+function ml_navigation:OMCOnPath(lookahead)
+	lookahead = lookahead or 3
+	
+	local pathsize = table.size(ml_navigation.path)
+	
+	lookahead = lookahead > pathsize and pathsize or lookahead
+	
+	if(pathsize > 0) then
+		for i=1,lookahead do
+			local node = ml_navigation.path[i]
+			if(node.navconnectionid ~= 0) then return true end
+		end
+	end
+	
+	return false
+end
+
+
+-- param = {mindist, raycast, path, startpos}
+-- mindist, minimum distance to get a position
+-- raycast, set to false to disable los checks
+-- path, provide an alternate path then the current navigation path
+-- startpos, provide an alternate starting position. player position by default
+-- returns a pos nearest to the minimum distance or nil
+function ml_navigation:GetPointOnPath(param)
+	local startpos = param.startpos ~= nil and param.startpos or ml_global_information.Player_Position
+	
+	local raycast = true
+	if(param.raycast ~= nil) then raycast = param.raycast end
+	
+	local mindist = param.mindist ~= nil and param.mindist or 0
+	local path = param.path ~= nil and param.path or ml_navigation.path
+	local pathsize = table.size(path)
+
+	if(pathsize > 0 and mindist > 0) then
+		local traversed
+		for i=1,pathsize do
+			local node = path[i]
+			local dist = math.distance3d(node,startpos)
+
+			if(dist >= mindist) then
+				local disttoprev = math.distance3d(prevnode,node)
+				local newpos = {
+					x = prevnode.x + (traversed/disttoprev) * (node.x - prevnode.x);
+					y = prevnode.y + (traversed/disttoprev) * (node.y - prevnode.y);
+					z = prevnode.z + (traversed/disttoprev) * (node.z - prevnode.z);			
+				}
+
+				if(not raycast) then return newpos end
+				
+				local hit, hitx, hity, hitz = RayCast(startpos.x,startpos.y,startpos.z, newpos.x, newpos.y, newpos.z)
+				if(not hit) then return newpos end
+			end
+			
+			prevnode = node
+			traversed = mindist - dist 
+		end
+	end
+
+	return nil
+end
+
+-- Get a node that is further away then min distance
+function ml_navigation:GetNearestNodeToDistance(mindist,startpos)
+	startpos = startpos or ml_global_information.Player_Position
+	
+	local pathsize = table.size(ml_navigation.path)
+
+	if(pathsize > 0) then
+		for i=1,pathsize do
+			local node = ml_navigation.path[i]
+			local pos = {x = node.x, y = node.y, z = node.z}
+			if(math.distance3d(startpos,pos) >= mindist) then
+				return pos,i
+			end
+		end
+	end
+	
+	return nil
+end
+
 
 -- Resets all OMC related variables
 function ml_navigation:ResetOMCHandler()
@@ -630,5 +818,5 @@ function Player:StopMovement()
 	gw2_unstuck.SoftReset()
 	Player:Stop()
 	NavigationManager:ResetPath()	
-	gw2_common_functions:StopCombatMovement()
+	gw2_combat_movement:StopCombatMovement()
 end

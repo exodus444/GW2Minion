@@ -68,7 +68,7 @@ end
 
 function gw2_radar.Draw(_, ticks )
 	-- Draw main radar gui.
-	if (GetGameState() == GW2.GAMESTATE.GAMEPLAY) then -- TODO: global is too slow, produces errors, fix when that is fixed. if (ml_global_information.GameState == GW2.GAMESTATE.GAMEPLAY) then
+	if (GetGameState() == GW2.GAMESTATE.GAMEPLAY) then 
 		if (gw2_radar.mainWindow.open) then
 			GUI:SetNextWindowSize(250,400,GUI.SetCond_FirstUseEver)
 			gw2_radar.mainWindow.visible, gw2_radar.mainWindow.open = GUI:Begin(gw2_radar.mainWindow.name, gw2_radar.mainWindow.open)
@@ -133,24 +133,29 @@ function gw2_radar.Draw(_, ticks )
 			
 			-- Delay parsing entities.
 			-- Checks all required entity lists. Delay this function as much as possible to reduce system load.
-			if (ticks - gw2_radar.parseTicks >= gw2_radar.parseTickDelay) then
-				gw2_radar.parseTicks = ticks
-				gw2_radar.parseEntities()
-				gw2_radar.parseCompassPath()
+			if (GetGameState() == GW2.GAMESTATE.GAMEPLAY) then -- checking gamestate once more, I have the feeling we are fucked by multithreading...
+				-- crashes after coming out of spvp..maybe this fixes it:
+				if (PvPManager:IsInMatch() == false or PvPManager:IsMatchFinished() == false) then
+				
+					if (ticks - gw2_radar.parseTicks >= gw2_radar.parseTickDelay ) then
+						gw2_radar.parseTicks = ticks
+						gw2_radar.parseEntities()
+						gw2_radar.parseCompassPath()
+					end
+					-- Delay updating compass and position data.
+					-- Delay this function as much as possible to reduce system load.
+					if (ticks - gw2_radar.computeTicks >= gw2_radar.computeTickDelay) then
+						gw2_radar.computeTicks = ticks
+						gw2_radar.updateCompassData()
+						gw2_radar.updateScreenPositionData()
+					end
+					
+					-- 3D radar.
+					gw2_radar.draw3DRadar()
+					-- Compass.
+					gw2_radar.drawCompass()
+				end
 			end
-			-- Delay updating compass and position data.
-			-- Delay this function as much as possible to reduce system load.
-			if (ticks - gw2_radar.computeTicks >= gw2_radar.computeTickDelay) then
-				gw2_radar.computeTicks = ticks
-				gw2_radar.updateCompassData()
-				gw2_radar.updateScreenPositionData()
-			end
-			
-			-- 3D radar.
-			gw2_radar.draw3DRadar()
-			-- Compass.
-			gw2_radar.drawCompass()
-			
 		-- end
 	end
 end
@@ -374,7 +379,10 @@ end
 
 -- Update Loop
 function gw2_radar.Update(_,ticks)
-	
+	if (ticks - gw2_radar.computeTicks >= gw2_radar.computeTickDelay) then
+		gw2_radar.parseEntities()
+		gw2_radar.parseCompassPath()
+	end
 end
 
 -- Functional Code.
@@ -475,7 +483,7 @@ end
 -- Create Filter list.
 function gw2_radar.updateFilterList()
 	for _,radarType in pairs(gw2_radar.radarTypes) do
-		if (table.valid(radarType) and (radarType.variables.compass.value or radarType.variables.radar3D.value)) then
+		if (table.valid(radarType)) then
 			gw2_radar.filterList[radarType.list] = gw2_radar.filterList[radarType.list] or {}
 			table.insert(gw2_radar.filterList[radarType.list],radarType)
 		end
@@ -491,7 +499,7 @@ function gw2_radar.parseEntities()
 			for _,entity in pairs(entityList) do
 				if (table.valid(entity)) then
 					for _,radarType in pairs(radarTypes) do
-						if (table.valid(radarType)) then
+						if (table.valid(radarType) and (radarType.variables.compass.value or radarType.variables.radar3D.value)) then
 							if (gw2_radar.matchFilterEntity(entity,radarType.filter)) then
 								local currEntity = gw2_radar.trackEntities[entity.id]
 								newTrackEntities[entity.id] = {
@@ -548,10 +556,10 @@ end
 
 
 
-RegisterEventHandler("Module.Initalize",gw2_radar.Init)
-RegisterEventHandler("Gameloop.Draw", gw2_radar.Draw)
--- RegisterEventHandler("Gameloop.Update",gw2_radar.Update)
-RegisterEventHandler("Radar.toggle", gw2_radar.ToggleWindow)
+RegisterEventHandler("Module.Initalize", gw2_radar.Init, "gw2_radar.Init")
+RegisterEventHandler("Gameloop.Draw", gw2_radar.Draw, "gw2_radar.Draw")
+-- RegisterEventHandler("Gameloop.Update", gw2_radar.Update, "gw2_radar.Update")
+RegisterEventHandler("Radar.toggle", gw2_radar.ToggleWindow, "gw2_radar.ToggleWindow")
 
 
 

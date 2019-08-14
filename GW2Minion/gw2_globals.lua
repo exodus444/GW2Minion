@@ -104,11 +104,11 @@ ml_global_information.VendorRepair = {
 }
 
 -- Moved this here so it's easier to look at and easier to copy paste
-function ml_global_information.OnUpdate(Event,ticks)
+function ml_global_information.OnUpdate(Event,ticks)	
+	ml_global_information.GameState = GetGameState()
+
 	if(TimeSince(ml_global_information.Lasttick) > BehaviorManager:GetTicksThreshold()) then
 		ml_global_information.Lasttick = ticks
-		
-		ml_global_information.GameState = GetGameState()
 
 		if(Player) then
 			ml_global_information.Player_ID = Player.id or 0
@@ -133,7 +133,9 @@ function ml_global_information.OnUpdate(Event,ticks)
 			ml_global_information.Player_Party = Player:GetParty() or nil
 			ml_global_information.Player_CastInfo = Player.castinfo or nil
 			ml_global_information.Player_Buffs = Player.buffs or {}
-			
+			ml_global_information.Player_InPVPMatch = PvPManager:IsInMatch()
+			ml_global_information.Player_InPVPLobby = PvPManager:IsInPvPLobby()
+			ml_global_information.Player_InPVPArea = ml_global_information.Player_InPVPMatch or ml_global_information.Player_InPVPLobby
 			
 			ml_global_information.CurrentMapID = Player:GetLocalMapID() or 0
 			if (gw2_datamanager and ml_global_information.CurrentMapID ~= 0) then  
@@ -147,7 +149,7 @@ function ml_global_information.OnUpdate(Event,ticks)
 		end
 	end
 end
-RegisterEventHandler("Gameloop.Update", ml_global_information.OnUpdate)
+RegisterEventHandler("Gameloop.Draw", ml_global_information.OnUpdate, "ml_global_information.OnUpdate")
 
 function ml_global_information.Start()
 	gw2_unstuck.Start()

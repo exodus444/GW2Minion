@@ -145,6 +145,12 @@ function gw2_unstuck.HandleStuck()
 		return gw2_unstuck.lastresult
 	end
 	
+	if(SkillManager:SkillStopsMovement()) then
+		d("[Unstuck]: A skill is preventing movement.")
+		gw2_unstuck.lastresult = true
+		return gw2_unstuck.lastresult	
+	end
+	
 	-- Waiting to use a waypoint
 	if(gw2_unstuck.Handle_Waypoint_Usage()) then
 		gw2_unstuck.lastresult = true
@@ -196,8 +202,9 @@ function gw2_unstuck.HandleOffMesh()
 	local ppos = Player.pos	
 	local maxwptrycount = 10
 	
-	d("[Unstuck]: Player not on mesh at (X: "..tostring(math.round(ppos.x,1)).." Y: "..tostring(math.round(ppos.y,1)).." Z: "..tostring(math.round(ppos.z,1)).." MAPID: "..tostring( ml_global_information.CurrentMapID).." - ("..tostring(math.round(offmeshtime / 1000)).."s)")
-
+	d("[Unstuck]: Player not on mesh for "..tostring(math.round(offmeshtime / 1000)).."s")
+	gw2_unstuck.PrintLocation(ppos)
+	
 	if(offmeshtime > 2000 and (gw2_unstuck.pvpmatch == false or offmeshtime < 15000) ) then
 		local p = NavigationManager:GetClosestPointOnMesh(ppos)
 		if(table.valid(p) and p.distance > 0 and p.distance < 500) then
@@ -258,8 +265,9 @@ function gw2_unstuck.HandleStuck_MovedDistanceCheck()
 
 		if(gw2_unstuck.distmoved < threshold) then
 			gw2_unstuck.lastaction = nil
-			if(gw2_unstuck.stuckcount >= mincount) then
+			if(gw2_unstuck.stuckcount >= mincount) then			
 				d(string.format("[Unstuck]: Distance moved: %s. Threshold: %s. Stuckcount: %s.", math.floor(gw2_unstuck.distmoved), math.floor(threshold), gw2_unstuck.stuckcount))
+				gw2_unstuck.PrintLocation(ppos)
 			end
 			gw2_unstuck.stuckcount = gw2_unstuck.stuckcount + 1
 
@@ -399,7 +407,7 @@ function gw2_unstuck.HandleStuck_MovedDistanceCheck()
 				-- raycast above the bot in a straight line (area ahead above clear)
 				local rpos2_hit, rpos2_x, rpos2_y, rpos2_z = RayCast(ppos.x, ppos.y, ppos.z-70, ppos.x+(ppos.hx*110), ppos.y+(ppos.hy*110), ppos.z-70) 
 				
-				if(rpos1_hit and not rpos2_hit) then
+				if(rpos1_hit and not rpos2_hit and not ml_navigation:OMCOnPath()) then
 					d("[Unstuck]: Something is right in front of us, but there is free space above us.")
 					gw2_unstuck.stuckhandlers.simplejump()
 				end
@@ -470,6 +478,7 @@ function gw2_unstuck.HandleStuckEntry(entry)
 		if(gw2_unstuck.pvpmatch and entry.stuckcount > 15) then
 			d("[Unstuck]: We are in a PVP Match and can't really do much more then we already have.")
 			d("[Unstuck]: Waiting to die or disconnect.")
+			gw2_unstuck.PrintLocation()
 			gw2_obstacle_manager.AddAvoidanceArea({pos = Player.pos, radius = 50})
 			status = gw2_unstuck.statuscodes.PVP_MATCH
 		elseif(entry.stuckcount > 25) then
@@ -538,7 +547,7 @@ end
 function gw2_unstuck.GetStuckEntry(pos)
 	if(table.valid(gw2_unstuck.stuckhistory)) then
 		for k,stuckentry in pairs(gw2_unstuck.stuckhistory) do
-			if(math.distance3d(pos,stuckentry.pos) < 40) then
+			if(stuckentry.mapid == ml_global_information.CurrentMapID and math.distance3d(pos,stuckentry.pos) < 40) then
 				return k,stuckentry
 			end
 		end
@@ -635,16 +644,34 @@ end
 function gw2_unstuck.ActiveThreshold()
 	local threshold = gw2_unstuck.threshold * (gw2_common_functions.HasBuffs(Player, ml_global_information.SpeedBoons) and 1.33 or 1) -- Increased threshold with swiftness
 	
-	if ( Player.swimming == GW2.SWIMSTATE.Diving ) then
+	if (ml_global_information.Player_InCombat or gw2_unstuck.movementtype.backward) then
+		-- combat and backwards movement is slower 
 		threshold = threshold / 2
 	end
-	
-	if (ml_global_information.Player_InCombat or gw2_common_functions.HasBuffs(Player, ml_global_information.SlowConditions) or gw2_unstuck.movementtype.backward) then
+		
+	if ( Player.swimming == GW2.SWIMSTATE.Diving ) then
+		-- swimming is slow
+		threshold = threshold / 2
+	end
+
+	if(gw2_common_functions.HasBuffs(Player, ml_global_information.SlowConditions)) then
 		-- We only move half (or less) the distance with conditions that slow movement
 		threshold = threshold / 2
 	end
 	
 	return threshold
+end
+
+function gw2_unstuck.PrintLocation(ppos)
+	ppos = table.valid(ppos) and ppos or Player.pos
+	
+	if(table.valid(ppos)) then
+		local mapid = Player:GetLocalMapID() or 0
+		local mapname = gw2_datamanager.GetMapName(mapid)
+		
+		d("[Unstuck]: Current map: ".. string.format("%s (%s)", mapname, mapid))
+		d("[Unstuck]: Current position: ".. string.format("{x=%s;y=%s;z=%s;}", math.round(ppos.x,2), math.round(ppos.y,2), math.round(ppos.z,2)))
+	end
 end
 
 -- Stuck handlers for reuse
@@ -840,6 +867,7 @@ end
 
 function gw2_unstuck.stuckhandlers.stop()
 	d("[Unstuck]: Stopping the bot.")
+	gw2_unstuck.PrintLocation()
 	Player:StopMovement()
 	ml_global_information.Stop()
 	BehaviorManager:Stop()
@@ -875,7 +903,7 @@ function gw2_unstuck.Init()
 	
 	gw2_unstuck.Stop()
 end
-RegisterEventHandler("Module.Initalize",gw2_unstuck.Init)
+RegisterEventHandler("Module.Initalize", gw2_unstuck.Init, "gw2_unstuck.Init")
 
 function gw2_unstuck.Update(_, tick)
 	if(TimeSince(gw2_unstuck.updatetick) > 1000) then
@@ -897,7 +925,7 @@ function gw2_unstuck.Update(_, tick)
 		end
 	end
 end
-RegisterEventHandler("Gameloop.Update",gw2_unstuck.Update)
+RegisterEventHandler("Gameloop.Update", gw2_unstuck.Update, "gw2_unstuck.Update")
 
 ---- GUI
 function gw2_unstuck.Draw()
@@ -981,4 +1009,4 @@ function gw2_unstuck.Draw()
 		GUI:End()
 	end
 end
-RegisterEventHandler("Gameloop.Draw",gw2_unstuck.Draw)
+RegisterEventHandler("Gameloop.Draw", gw2_unstuck.Draw, "gw2_unstuck.Draw")
