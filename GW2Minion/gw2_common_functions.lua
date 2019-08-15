@@ -1,3 +1,21 @@
+local table = table
+local string = string
+local pairs = pairs
+local tostring = tostring
+local tonumber = tonumber
+local next = next
+local select = select
+local type = type
+local math = math
+local ipairs = ipairs
+local ml_global_information = ml_global_information
+local CharacterList = CharacterList
+local GadgetList = GadgetList
+local Settings = Settings
+local GetString = GetString
+local NavigationManager = NavigationManager
+local TimeSince = TimeSince
+
 gw2_common_functions = {}
 
 function gw2_common_functions.HasBuffs(entity, buffIDs)
@@ -27,7 +45,7 @@ function gw2_common_functions.BufflistHasBuffs(bufflist, buffIDs)
 		if(string.valid(_orids)) then
 			for _andid in string.split(_orids,"+") do
 					found = false
-				for i, buff in pairs(bufflist) do
+				for _, buff in pairs(bufflist) do
 
 					if (buff.id == tonumber(_andid)) then
 						found = true
@@ -85,7 +103,7 @@ end
 function gw2_common_functions.GetPartyMemberByName( name )
 	local partylist = ml_global_information.Player_Party
 	if (table.valid(partylist)) then
-		local i, member  = next( partylist )
+		local i, member  = next(partylist)
 		while i and member do
 			if (member.name == name) then
 				return member
@@ -155,7 +173,6 @@ end
 function gw2_common_functions.GetClosestWaypointToMap(targetMapID, currentMapID)
 
 	currentMapID = currentMapID ~= nil and currentMapID or ml_global_information.CurrentMapID
-	local pos = ml_global_information.Player_Pos
 
 	if(targetMapID ~= nil) then	
 		local currNode = ml_nav_manager.GetNode(currentMapID)
@@ -166,9 +183,9 @@ function gw2_common_functions.GetClosestWaypointToMap(targetMapID, currentMapID)
 			local navPath = ml_nav_manager.GetPath(destNode, currNode)
 
 			if(table.valid(navPath)) then
-				local prevNode = nil
-				local closestWaypoint = nil
-				
+				local prevNode
+				local closestWaypoint
+
 				local i,node = next(navPath)
 				while i and node and not closestWaypoint do
 					if(prevNode == nil) then
@@ -273,6 +290,7 @@ function gw2_common_functions.GetBestCharacterTarget( maxrange )
 	end
 	return nil
 end
+
 -- Tries to get a "best target" to attack for assist mode (maxdistance limited)
 function gw2_common_functions.GetBestCharacterTargetForAssist( )
 	
@@ -310,6 +328,7 @@ function gw2_common_functions.GetBestCharacterTargetForAssist( )
 	end
 	return nil
 end
+
 -- Tries to get a "best aggro target" to attack
 function gw2_common_functions.GetBestAggroTarget(healthstate)
 	local range = ml_global_information.AttackRange or 750
@@ -697,7 +716,7 @@ function gw2_common_functions.radianToDegrees(radian)
 	return degrees
 end
 
--- get differance in degrees.
+-- get difference in degrees.
 function gw2_common_functions.getDegreeDiffTargets(targetIDA,targetIDB) -- gw2_common_functions.getDegreeDiffTargets(targetID,Player.id) player relative to target.
 	local targetA = CharacterList:Get(targetIDA) or GadgetList:Get(targetIDA)
 	local targetB = CharacterList:Get(targetIDB) or GadgetList:Get(targetIDB)
@@ -738,7 +757,7 @@ function gw2_common_functions.filterRelativePostion(entityList,dir)
 end
 
 -- Check if there is a valid path between startpos and targetpos.
-function gw2_common_functions.ValidPath(startpos,targetpos,allowpartialpath)
+function gw2_common_functions.ValidPath(startpos, targetpos, _)
 	if(table.valid(startpos) and table.valid(targetpos)) then
 		return NavigationManager:IsReachable(startpos,targetpos)
 	end
@@ -751,6 +770,7 @@ function gw2_common_functions.GetRandomPointOnCircle(targetpos, min, max, maxtri
 	maxtries = type(maxtries) == "number" and maxtries or 1
 	
 	local trycount = 0
+
 	while trycount < maxtries do
 		trycount = trycount + 1
 		
@@ -770,6 +790,15 @@ end
 -- Get a random position on the map.
 -- First try the levelmap, then try to get a position from markers, then any random position on the mesh around the player
 gw2_common_functions.randompointsused = {}
+
+-- Make sure that the position is reachable by the bot
+local function _validpath(pos)
+	if(table.valid(pos)) then
+		return NavigationManager:IsReachable(pos.x,pos.y,pos.z)
+	end
+	return false
+end
+
 function gw2_common_functions.GetRandomPoint()
 	if(not gw2_common_functions.randompointsused[ml_global_information.CurrentMapID]) then
 		gw2_common_functions.randompointsused = {}
@@ -792,14 +821,6 @@ function gw2_common_functions.GetRandomPoint()
 		end
 		
 		return true
-	end
-	
-	-- Make sure that the position is reachable by the bot
-	local function _validpath(pos)
-		if(table.valid(pos)) then
-			return NavigationManager:IsReachable(pos.x,pos.y,pos.z)
-		end
-		return false
 	end
 	
 	local randompos = nil

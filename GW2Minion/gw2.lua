@@ -1,3 +1,5 @@
+local GUI = GUI
+
 gw2minion = {}
 gw2minion.btreecontext = {}
 
@@ -201,7 +203,7 @@ function gw2minion.LoadBehaviorFiles()
 RegisterEventHandler("RefreshBehaviorFiles", gw2minion.LoadBehaviorFiles, "gw2minion.LoadBehaviorFiles")
 
 
-function gw2minion.DrawCall(event, ticks )
+function gw2minion.DrawCall(_,_)
 	-- Check for player name change and queue the gw2minion.PlayerChanged event
 	gw2minion.PlayerChanged()
 	-- Check for map change and queue the gw2minion.MapChanged event

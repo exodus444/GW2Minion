@@ -1,3 +1,4 @@
 /gw2minion/settings.lua
 .gitignore
 mmoalt_FollowCommander/storage/
+.idea/

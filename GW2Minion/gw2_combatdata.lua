@@ -1,3 +1,14 @@
+local Settings = Settings
+local GetString = GetString
+local CharacterList = CharacterList
+local GUI = GUI
+local ml_global_information = ml_global_information
+local table = table
+local string = string
+local pairs = pairs
+local ipairs = ipairs
+local math = math
+
 -- Create parser variable.
 gw2_combatdata = {}
 
@@ -14,7 +25,7 @@ gw2_combatdata.mainWindow			= {
 }
 gw2_combatdata.active2				= true
 gw2_combatdata.updateTicks			= 0
-gw2_combatdata.upateTickDelay		= 250
+gw2_combatdata.updateTickDelay = 250
 gw2_combatdata.cleanTicks			= 0
 gw2_combatdata.cleanTickDelay		= 30000
 gw2_combatdata.partyIDUpdateTicks	= 0
@@ -182,7 +193,7 @@ function gw2_combatdata.Draw(_, ticks)
 end
 
 -- Draw selected target info.
-function gw2_combatdata.DrawSelectedTargetInfo(ticks)
+function gw2_combatdata.DrawSelectedTargetInfo(_)
 	if(Settings.gw2_combatdata.active2) then
 		if (table.valid(gw2_combatdata.selectedTargetData)) then
 			-- Create invisible window as draw region.
@@ -800,7 +811,7 @@ end
 -- Update Loop
 function gw2_combatdata.Update(_,ticks)
 	if (Settings.gw2_combatdata.active2) then
-		if (ticks - gw2_combatdata.updateTicks >= gw2_combatdata.upateTickDelay) then
+		if (ticks - gw2_combatdata.updateTicks >= gw2_combatdata.updateTickDelay) then
 			gw2_combatdata.updateTicks = ticks
 			gw2_combatdata.updateLog()
 			gw2_combatdata.updateCombatData()
@@ -816,6 +827,6 @@ end
 
 
 
-RegisterEventHandler("Module.Initalize", gw2_combatdata.Init, "gw2_combatdata.Init")
+RegisterEventHandler("Module.Initialize", gw2_combatdata.Init, "gw2_combatdata.Init")
 RegisterEventHandler("Gameloop.Draw", gw2_combatdata.Draw, "gw2_combatdata.Draw")
 RegisterEventHandler("Gameloop.Update", gw2_combatdata.Update, "gw2_combatdata.Update")

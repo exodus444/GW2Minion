@@ -1,3 +1,14 @@
+local ml_global_information = ml_global_information
+local ml_navigation = ml_navigation
+local SkillManager = SkillManager
+local BehaviorManager = BehaviorManager
+local TimeSince = TimeSince
+local gw2_common_functions = gw2_common_functions
+local table = table
+local math = math
+local pairs = pairs
+local type = type
+
 gw2_combat_movement = {}
 
 gw2_combat_movement.combatmovement = {

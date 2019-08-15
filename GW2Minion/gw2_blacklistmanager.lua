@@ -1,3 +1,15 @@
+local pairs = pairs
+local table = table
+local type = type
+local tostring = tostring
+local string = string
+local tonumber = tonumber
+local math = math
+local next = next
+local GUI = GUI
+local GetString = GetString
+
+
 -- Adds additional options to the Blacklistmanager in the minionlib
 gw2_blacklistmanager = {}
 gw2_blacklistmanager.ticks = 0
@@ -27,7 +39,7 @@ function gw2_blacklistmanager.ModuleInit()
 		end
 	end
 end
-RegisterEventHandler("Module.Initalize",gw2_blacklistmanager.ModuleInit, "gw2_blacklistmanager.ModuleInit")
+RegisterEventHandler("Module.Initalize", gw2_blacklistmanager.ModuleInit, "gw2_blacklistmanager.ModuleInit")
 
 function gw2_blacklistmanager.OnUpdate(_,ticks)
 	if(TimeSince(gw2_blacklistmanager.ticks) > 1000) then
@@ -347,8 +359,6 @@ gw2_blacklistmanager.inventoryIndexSelected = 1
 gw2_blacklistmanager.inventoryLastCheck = 0
 gw2_blacklistmanager.inventoryList = {}
 function gw2_blacklistmanager:DrawInventory()
-	local vars = self.GUI.vars
-	
 	GUI:Separator();
 	GUI:Text(GetString("Blacklist") .. " " .. self.name)
 	GUI:TextWrapped(GetString("Select an item in your inventory to blacklist from selling to vendors"))
