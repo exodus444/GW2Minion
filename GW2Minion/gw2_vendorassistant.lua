@@ -1,4 +1,4 @@
-gw2_vendorassistant = {}
+gw2_vendorassistant = gw2_vendorassistant or {}
 gw2_vendorassistant.window = {
 	open = false,
 	visible = true,

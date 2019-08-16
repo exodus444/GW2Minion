@@ -1,7 +1,7 @@
 -- Avoidance area manager
 -- Entries are stored in list manager and loaded as needed
 -- Areas can be managed from the list manager
-gw2_obstacle_manager = {}
+gw2_obstacle_manager = gw2_obstacle_manager or {}
 gw2_obstacle_manager.ticks = 0
 gw2_obstacle_manager.obstacles = {}
 gw2_obstacle_manager.avoidanceareas = {} -- Set in init

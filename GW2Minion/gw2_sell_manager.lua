@@ -1,4 +1,4 @@
-gw2_sell_manager = {}
+gw2_sell_manager = gw2_sell_manager or {}
 gw2_sell_manager.active = true
 gw2_sell_manager.salvageTick = 0
 gw2_sell_manager.toolTip = false

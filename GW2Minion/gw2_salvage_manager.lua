@@ -1,4 +1,4 @@
-gw2_salvage_manager = {}
+gw2_salvage_manager = gw2_salvage_manager or {}
 gw2_salvage_manager.active = false
 gw2_salvage_manager.salvageTick = 0
 gw2_salvage_manager.toolTip = false

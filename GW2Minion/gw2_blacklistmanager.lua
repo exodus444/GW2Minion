@@ -1,3 +1,8 @@
+GUI = GUI or {}
+local GUI = GUI
+
+local GetString = GetString
+
 local pairs = pairs
 local table = table
 local type = type
@@ -6,12 +11,10 @@ local string = string
 local tonumber = tonumber
 local math = math
 local next = next
-local GUI = GUI
-local GetString = GetString
 
 
 -- Adds additional options to the Blacklistmanager in the minionlib
-gw2_blacklistmanager = {}
+gw2_blacklistmanager = gw2_blacklistmanager or {}
 gw2_blacklistmanager.ticks = 0
 gw2_blacklistmanager.currentmapid = 0
 gw2_blacklistmanager.lists = {}

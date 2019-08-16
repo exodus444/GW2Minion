@@ -1,4 +1,4 @@
-gw2_nav_manager = {}
+gw2_nav_manager = gw2_nav_manager or {}
 
 function gw2_nav_manager.ModuleInit()
 	ml_node.DistanceTo = gw2_nav_manager.NodeDistanceTo

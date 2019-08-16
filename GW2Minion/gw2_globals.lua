@@ -1,9 +1,17 @@
-local GetGameState = GetGameState
-local BehaviorManager = BehaviorManager
-local PvPManager = PvPManager
-local Inventory = Inventory
-local table = table
+GW2 = GW2 or {}
 local GW2 = GW2
+
+BehaviorManager = BehaviorManager or {}
+local BehaviorManager = BehaviorManager
+
+PvPManager = PvPManager or {}
+local PvPManager = PvPManager or {}
+
+Inventory = Inventory or {}
+local Inventory = Inventory or {}
+
+local GetGameState = GetGameState
+local table = table
 
 ml_global_information = ml_global_information or {}
 ml_global_information.Path = GetStartupPath()

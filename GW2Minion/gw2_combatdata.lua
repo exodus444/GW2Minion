@@ -1,8 +1,16 @@
-local Settings = Settings
-local GetString = GetString
-local CharacterList = CharacterList
+GUI = GUI or {}
 local GUI = GUI
+
+Settings = Settings or {}
+local Settings = Settings
+
+CharacterList = CharacterList or {}
+local CharacterList = CharacterList
+
+ml_global_information = ml_global_information or {}
 local ml_global_information = ml_global_information
+
+local GetString = GetString
 local table = table
 local string = string
 local pairs = pairs
@@ -10,7 +18,7 @@ local ipairs = ipairs
 local math = math
 
 -- Create parser variable.
-gw2_combatdata = {}
+gw2_combatdata = gw2_combatdata or {}
 
 -- gw2_combatdata variables.
 gw2_combatdata.mainWindow			= {

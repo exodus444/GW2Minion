@@ -1,4 +1,4 @@
-gw2_unstuck = {}
+gw2_unstuck = gw2_unstuck or {}
 gw2_unstuck.gui = {open = false; visible = false; name = GetString("Unstuck")}
 gw2_unstuck.updatetick = 0
 gw2_unstuck.stucktick = 0

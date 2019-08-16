@@ -1,4 +1,4 @@
-gw2_gui_manager = {}
+gw2_gui_manager = gw2_gui_manager or {}
 
 gw2_gui_manager.messages = {}
 

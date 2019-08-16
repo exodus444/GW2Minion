@@ -1,4 +1,4 @@
-gw2_buy_manager = {}
+gw2_buy_manager = gw2_buy_manager or {}
 gw2_buy_manager.availableOnMap = {
 	lastMap = 0,
 	salvage = {[1] = true, [2] = true, [3] = true, [4] = true, [5] = true,},

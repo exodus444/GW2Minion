@@ -1,5 +1,5 @@
 -- Map & Itemdata manager
-gw2_datamanager = { }
+gw2_datamanager = gw2_datamanager or {}
 gw2_datamanager.path = GetStartupPath().. [[\LuaMods\GW2Minion\map_data.lua]]
 gw2_datamanager.mapData = {}
 gw2_datamanager.levelmap = {} -- Create a "2D - Levelmap/Table" which provides us an avg. level for all other entries in the zone, also for random navigation

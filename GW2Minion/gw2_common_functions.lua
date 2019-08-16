@@ -1,3 +1,18 @@
+ml_global_information = ml_global_information or {}
+local ml_global_information = ml_global_information
+
+CharacterList = CharacterList or {}
+local CharacterList = CharacterList
+
+GadgetList = GadgetList or {}
+local GadgetList = GadgetList
+
+Settings = Settings or {}
+local Settings = Settings
+
+NavigationManager = NavigationManager or {}
+local NavigationManager = NavigationManager
+
 local table = table
 local string = string
 local pairs = pairs
@@ -8,15 +23,10 @@ local select = select
 local type = type
 local math = math
 local ipairs = ipairs
-local ml_global_information = ml_global_information
-local CharacterList = CharacterList
-local GadgetList = GadgetList
-local Settings = Settings
 local GetString = GetString
-local NavigationManager = NavigationManager
 local TimeSince = TimeSince
 
-gw2_common_functions = {}
+gw2_common_functions = gw2_common_functions or {}
 
 function gw2_common_functions.HasBuffs(entity, buffIDs)
     if ( entity ) then

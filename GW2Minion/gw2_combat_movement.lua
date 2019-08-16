@@ -9,7 +9,7 @@ local math = math
 local pairs = pairs
 local type = type
 
-gw2_combat_movement = {}
+gw2_combat_movement = gw2_combat_movement or {}
 
 gw2_combat_movement.combatmovement = {
 	combat = false,   -- "doing combat movement"

@@ -1,4 +1,4 @@
-gw2_repair_manager = {}
+gw2_repair_manager = gw2_repair_manager or {}
 gw2_repair_manager.damagedLimit = 4
 gw2_repair_manager.brokenLimit = 1
 

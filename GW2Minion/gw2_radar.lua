@@ -22,14 +22,26 @@
 	
 
 ]]
+GUI = GUI or {}
 local GUI = GUI
-local GetString = GetString
+
+HackManager = HackManager or {}
 local HackManager = HackManager
-local GetGameState = GetGameState
+
+GW2 = GW2 or {}
 local GW2 = GW2
+
+Settings = Settings or {}
 local Settings = Settings
+
+PvPManager = PvPManager or {}
 local PvPManager = PvPManager
+
+RenderManager = RenderManager or {}
 local RenderManager = RenderManager
+
+local GetString = GetString
+local GetGameState = GetGameState
 
 local tvalid = table.valid
 local tinsert = table.insert
@@ -39,7 +51,7 @@ local pairs = pairs
 local svalid = string.valid
 
 -- Create radar variable.
-gw2_radar = {}
+gw2_radar = gw2_radar or {}
 
 -- gw2_radar variables.
 gw2_radar.mainWindow		= {name = "Radar", open = false, visible = false}

@@ -1,6 +1,7 @@
+GUI = GUI or {}
 local GUI = GUI
 
-gw2minion = {}
+gw2minion = gw2minion or {}
 gw2minion.btreecontext = {}
 
 function gw2minion.Init()

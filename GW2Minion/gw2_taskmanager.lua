@@ -1,5 +1,5 @@
 -- Heartquest controller
-gw2_tm_heartquest = {}
+gw2_tm_heartquest = gw2_tm_heartquest or {}
 gw2_tm_heartquest.lastcheck = 0
 gw2_tm_heartquest.laststatus = true
 gw2_tm_heartquest.lastid = 0
