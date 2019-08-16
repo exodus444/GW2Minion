@@ -835,6 +835,6 @@ end
 
 
 
-RegisterEventHandler("Module.Initialize", gw2_combatdata.Init, "gw2_combatdata.Init")
+RegisterEventHandler("Module.Initalize", gw2_combatdata.Init, "gw2_combatdata.Init")
 RegisterEventHandler("Gameloop.Draw", gw2_combatdata.Draw, "gw2_combatdata.Draw")
 RegisterEventHandler("Gameloop.Update", gw2_combatdata.Update, "gw2_combatdata.Update")
